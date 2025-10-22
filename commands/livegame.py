@@ -5,7 +5,7 @@ TEMPORARILY DISABLED: Riot API not returning summoner ID field needed for specta
 
 # import discord
 # from discord import app_commands
-# from discord.ext import commands
+from discord.ext import commands
 # import riot_api
 # from utils.helpers import create_basic_embed, create_error_embed, get_region_choices, format_duration
 # import config
