@@ -7,7 +7,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 import riot_api
-from utils.helpers import create_basic_embed, create_error_embed, create_summoner_embed, create_rank_embed, get_region_choices
+from utils.helpers import create_basic_embed, create_error_embed, create_summoner_embed, create_rank_embed
 import config
 import json
 import os
@@ -101,15 +101,12 @@ async def setup(bot: commands.Bot):
     @track_group.command(name="add", description="Add a player to track (creates a thread)")
     @app_commands.describe(
         game_name="Player's game name (without tag)",
-        tag_line="Player's tag (without #)",
-        region="Region (default: EUN1)"
+        tag_line="Player's tag (without #)"
     )
-    @app_commands.choices(region=get_region_choices())
     async def track_add(
         interaction: discord.Interaction,
         game_name: str,
-        tag_line: str,
-        region: str = config.DEFAULT_REGION
+        tag_line: str
     ):
         """
         Add a player to track by creating a dedicated thread.
@@ -118,7 +115,6 @@ async def setup(bot: commands.Bot):
             interaction: Discord interaction
             game_name: Player's game name
             tag_line: Player's tag
-            region: Region code
         """
         await interaction.response.defer()
         
@@ -145,8 +141,8 @@ async def setup(bot: commands.Bot):
                 await interaction.followup.send(embed=embed)
                 return
             
-            # Fetch summoner data to verify they exist
-            summoner_data = await riot_api.get_summoner_by_riot_id(game_name, tag_line, region)
+            # Fetch summoner data to verify they exist (uses default region from config)
+            summoner_data = await riot_api.get_summoner_by_riot_id(game_name, tag_line, config.DEFAULT_REGION)
             
             puuid = summoner_data["puuid"]
             verified_name = summoner_data["gameName"]
@@ -173,7 +169,7 @@ async def setup(bot: commands.Bot):
             
             initial_content = (
                 f"**Now stalking {full_name}**\n"
-                f"Region: {region.upper()}\n"
+                f"Region: {config.DEFAULT_REGION.upper()}\n"
                 f"Added by: {interaction.user.mention}"
             )
             
@@ -214,7 +210,7 @@ async def setup(bot: commands.Bot):
                 "puuid": puuid,
                 "game_name": verified_name,
                 "tag_line": verified_tag,
-                "region": region.lower(),
+                "region": config.DEFAULT_REGION.lower(),
                 "thread_id": thread.id,
                 "tracked_at": datetime.now().isoformat(),
                 "tracked_by": interaction.user.id
@@ -227,7 +223,7 @@ async def setup(bot: commands.Bot):
                 title="✅ Player Stalked",
                 description=f"**{full_name}** is now being stalked!\n\n"
                            f"Thread created: {thread.mention}\n"
-                           f"Region: {region.upper()}"
+                           f"Region: {config.DEFAULT_REGION.upper()}"
             )
             
             await interaction.followup.send(embed=embed)

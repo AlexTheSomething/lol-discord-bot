@@ -7,7 +7,7 @@ from discord import app_commands
 from discord.ext import commands
 import riot_api
 from utils.helpers import (
-    create_basic_embed, create_error_embed, get_region_choices,
+    create_basic_embed, create_error_embed,
     format_kda, calculate_kda_ratio, format_duration, format_timestamp
 )
 import config
@@ -19,15 +19,12 @@ async def setup(bot: commands.Bot):
     @bot.tree.command(name="recentmatches", description="Display last 5 matches")
     @app_commands.describe(
         game_name="Summoner's game name (without tag)",
-        tag_line="Summoner's tag (without #)",
-        region="Region (default: EUN1)"
+        tag_line="Summoner's tag (without #)"
     )
-    @app_commands.choices(region=get_region_choices())
     async def recentmatches(
         interaction: discord.Interaction,
         game_name: str,
-        tag_line: str,
-        region: str = config.DEFAULT_REGION
+        tag_line: str
     ):
         """
         Display last 5 matches with KDA, champion, and result.
@@ -36,17 +33,16 @@ async def setup(bot: commands.Bot):
             interaction: Discord interaction
             game_name: Summoner's game name
             tag_line: Summoner's tag
-            region: Region code
         """
         await interaction.response.defer()
         
         try:
-            # Fetch summoner data
-            summoner_data = await riot_api.get_summoner_by_riot_id(game_name, tag_line, region)
+            # Fetch summoner data (uses default region from config)
+            summoner_data = await riot_api.get_summoner_by_riot_id(game_name, tag_line, config.DEFAULT_REGION)
             puuid = summoner_data["puuid"]
             
             # Fetch match history
-            match_ids = await riot_api.get_match_history(puuid, region, count=5)
+            match_ids = await riot_api.get_match_history(puuid, config.DEFAULT_REGION, count=5)
             
             if not match_ids:
                 embed = create_basic_embed(
@@ -67,7 +63,7 @@ async def setup(bot: commands.Bot):
             # Process each match
             for i, match_id in enumerate(match_ids, 1):
                 try:
-                    match_details = await riot_api.get_match_details(match_id, region)
+                    match_details = await riot_api.get_match_details(match_id, config.DEFAULT_REGION)
                     
                     # Find player's data in the match
                     participant = None

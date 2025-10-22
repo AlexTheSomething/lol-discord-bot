@@ -70,9 +70,9 @@ async def setup(bot: commands.Bot):
             name="💡 Usage Tips",
             value=(
                 "• Use Riot ID format: `GameName#TAG`\n"
-                f"• Default region is **{config.DEFAULT_REGION.upper()}**\n"
-                "• Most commands support region selection\n"
-                "• Track summoners to build a leaderboard!"
+                f"• All commands use **{config.DEFAULT_REGION.upper()}** region\n"
+                "• Stalking system auto-checks for new matches every 2 minutes\n"
+                "• Duo detection tracks repeated teammates!"
             ),
             inline=False
         )

@@ -6,7 +6,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 import riot_api
-from utils.helpers import create_summoner_embed, create_error_embed, get_region_choices
+from utils.helpers import create_summoner_embed, create_error_embed
 import config
 
 
@@ -16,15 +16,12 @@ async def setup(bot: commands.Bot):
     @bot.tree.command(name="summoner", description="Display summoner information")
     @app_commands.describe(
         game_name="Summoner's game name (without tag)",
-        tag_line="Summoner's tag (without #)",
-        region="Region (default: EUN1)"
+        tag_line="Summoner's tag (without #)"
     )
-    @app_commands.choices(region=get_region_choices())
     async def summoner(
         interaction: discord.Interaction,
         game_name: str,
-        tag_line: str,
-        region: str = config.DEFAULT_REGION
+        tag_line: str
     ):
         """
         Display summoner level, profile icon, and region.
@@ -33,13 +30,12 @@ async def setup(bot: commands.Bot):
             interaction: Discord interaction
             game_name: Summoner's game name
             tag_line: Summoner's tag
-            region: Region code
         """
         await interaction.response.defer()
         
         try:
-            # Fetch summoner data
-            summoner_data = await riot_api.get_summoner_by_riot_id(game_name, tag_line, region)
+            # Fetch summoner data (uses default region from config)
+            summoner_data = await riot_api.get_summoner_by_riot_id(game_name, tag_line, config.DEFAULT_REGION)
             
             # Create and send embed
             embed = create_summoner_embed(summoner_data)

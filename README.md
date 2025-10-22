@@ -126,10 +126,10 @@ Logged in as: YourBotName (ID: 123456789)
 
 | Command | Description | Usage |
 |---------|-------------|-------|
-| `/summoner` | Display summoner information | `/summoner game_name:PlayerName tag_line:TAG [region:eun1]` |
-| `/recentmatches` | Display last 5 matches | `/recentmatches game_name:PlayerName tag_line:TAG [region:eun1]` |
-| `/championmastery` | Show top 5 champions | `/championmastery game_name:PlayerName tag_line:TAG [region:eun1]` |
-| `/rotation` | Current free champion rotation | `/rotation [region:eun1]` |
+| `/summoner` | Display summoner information | `/summoner game_name:PlayerName tag_line:TAG` |
+| `/recentmatches` | Display last 5 matches | `/recentmatches game_name:PlayerName tag_line:TAG` |
+| `/championmastery` | Show top 5 champions | `/championmastery game_name:PlayerName tag_line:TAG` |
+| `/rotation` | Current free champion rotation | `/rotation` |
 | ~~`/rank`~~ | ~~Show ranked stats~~ | *Temporarily disabled* |
 | ~~`/livegame`~~ | ~~Show current match~~ | *Temporarily disabled* |
 
@@ -138,10 +138,10 @@ Logged in as: YourBotName (ID: 123456789)
 | Command | Description | Usage |
 |---------|-------------|-------|
 | `/stalk set` | Set the stalking channel | `/stalk set channel:#your-channel` |
-| `/stalk add` | Stalk a player (creates thread) | `/stalk add game_name:PlayerName tag_line:TAG [region:eun1]` |
+| `/stalk add` | Stalk a player (creates thread) | `/stalk add game_name:PlayerName tag_line:TAG` |
 | `/stalk list` | List all stalked players | `/stalk list` |
 | `/stalk remove` | Stop stalking a player | `/stalk remove game_name:PlayerName tag_line:TAG` |
-| `/compare` | Compare two summoners | `/compare game_name1:Player1 tag_line1:TAG1 game_name2:Player2 tag_line2:TAG2 [region:eun1]` |
+| `/compare` | Compare two summoners | `/compare game_name1:Player1 tag_line1:TAG1 game_name2:Player2 tag_line2:TAG2` |
 
 ### Utility Commands
 
@@ -153,23 +153,16 @@ Logged in as: YourBotName (ID: 123456789)
 | `/help` | Show all commands | `/help` |
 | `/about` | Bot information | `/about` |
 
-## 🌍 Region Codes
+## 🌍 Region Configuration
 
-The bot supports the following regions:
+The bot uses a **default region** set in `config.py`. Change it to match your server's region:
 
-| Code | Region |
-|------|--------|
-| `eun1` | EU Nordic & East |
-| `euw1` | EU West |
-| `na1` | North America |
-| `br1` | Brazil |
-| `la1` | Latin America North |
-| `la2` | Latin America South |
-| `oc1` | Oceania |
-| `kr` | Korea |
-| `jp1` | Japan |
-| `tr1` | Turkey |
-| `ru` | Russia |
+```python
+DEFAULT_REGION = "eun1"  # Change to your preferred region
+```
+
+**Supported regions:**
+`eun1`, `euw1`, `na1`, `br1`, `la1`, `la2`, `oc1`, `kr`, `jp1`, `tr1`, `ru`
 
 ## 🔑 Riot ID Format
 
@@ -194,7 +187,7 @@ The bot features a unique **automated thread-based tracking system**:
 
 2. **Add players to track:**
    ```
-   /stalk add game_name:Faker tag_line:KR1 region:kr
+   /stalk add game_name:Faker tag_line:KR1
    ```
    - Creates a dedicated thread "👁️ Faker#KR1"
    - Posts their current stats

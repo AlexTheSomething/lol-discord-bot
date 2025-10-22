@@ -6,7 +6,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 import riot_api
-from utils.helpers import create_basic_embed, create_error_embed, format_rank, calculate_winrate, get_region_choices
+from utils.helpers import create_basic_embed, create_error_embed, format_rank, calculate_winrate
 import config
 
 
@@ -18,17 +18,14 @@ async def setup(bot: commands.Bot):
         game_name1="First summoner's game name",
         tag_line1="First summoner's tag",
         game_name2="Second summoner's game name",
-        tag_line2="Second summoner's tag",
-        region="Region (default: EUN1)"
+        tag_line2="Second summoner's tag"
     )
-    @app_commands.choices(region=get_region_choices())
     async def compare(
         interaction: discord.Interaction,
         game_name1: str,
         tag_line1: str,
         game_name2: str,
-        tag_line2: str,
-        region: str = config.DEFAULT_REGION
+        tag_line2: str
     ):
         """
         Compare two summoners side by side.
@@ -39,22 +36,21 @@ async def setup(bot: commands.Bot):
             tag_line1: First summoner's tag
             game_name2: Second summoner's game name
             tag_line2: Second summoner's tag
-            region: Region code
         """
         await interaction.response.defer()
         
         try:
-            # Fetch both summoners
-            summoner1 = await riot_api.get_summoner_by_riot_id(game_name1, tag_line1, region)
-            summoner2 = await riot_api.get_summoner_by_riot_id(game_name2, tag_line2, region)
+            # Fetch both summoners (uses default region from config)
+            summoner1 = await riot_api.get_summoner_by_riot_id(game_name1, tag_line1, config.DEFAULT_REGION)
+            summoner2 = await riot_api.get_summoner_by_riot_id(game_name2, tag_line2, config.DEFAULT_REGION)
             
             # Fetch rank data
-            rank1 = await riot_api.get_summoner_rank(summoner1["puuid"], region)
-            rank2 = await riot_api.get_summoner_rank(summoner2["puuid"], region)
+            rank1 = await riot_api.get_summoner_rank(summoner1["puuid"], config.DEFAULT_REGION)
+            rank2 = await riot_api.get_summoner_rank(summoner2["puuid"], config.DEFAULT_REGION)
             
             # Fetch champion mastery
-            mastery1 = await riot_api.get_champion_mastery(summoner1["puuid"], region, count=1)
-            mastery2 = await riot_api.get_champion_mastery(summoner2["puuid"], region, count=1)
+            mastery1 = await riot_api.get_champion_mastery(summoner1["puuid"], config.DEFAULT_REGION, count=1)
+            mastery2 = await riot_api.get_champion_mastery(summoner2["puuid"], config.DEFAULT_REGION, count=1)
             
             # Get champion data
             champion_data = await riot_api.get_champion_data()
@@ -104,7 +100,7 @@ async def setup(bot: commands.Bot):
             # Create comparison embed
             embed = create_basic_embed(
                 title="⚔️ Summoner Comparison",
-                description=f"**{name1}** vs **{name2}**\nRegion: {region.upper()}"
+                description=f"**{name1}** vs **{name2}**\nRegion: {config.DEFAULT_REGION.upper()}"
             )
             
             # Level comparison

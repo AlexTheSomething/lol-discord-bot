@@ -6,7 +6,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 import riot_api
-from utils.helpers import create_basic_embed, create_error_embed, get_region_choices
+from utils.helpers import create_basic_embed, create_error_embed
 import config
 
 
@@ -14,24 +14,18 @@ async def setup(bot: commands.Bot):
     """Setup function to register the command with the bot."""
     
     @bot.tree.command(name="rotation", description="Display current free champion rotation")
-    @app_commands.describe(region="Region (default: EUN1)")
-    @app_commands.choices(region=get_region_choices())
-    async def rotation(
-        interaction: discord.Interaction,
-        region: str = config.DEFAULT_REGION
-    ):
+    async def rotation(interaction: discord.Interaction):
         """
         Display current free champion rotation.
         
         Args:
             interaction: Discord interaction
-            region: Region code
         """
         await interaction.response.defer()
         
         try:
-            # Fetch rotation data
-            rotation_data = await riot_api.get_champion_rotation(region)
+            # Fetch rotation data (uses default region from config)
+            rotation_data = await riot_api.get_champion_rotation(config.DEFAULT_REGION)
             
             free_champion_ids = rotation_data.get("freeChampionIds", [])
             
@@ -65,7 +59,7 @@ async def setup(bot: commands.Bot):
             
             embed.add_field(
                 name="Region",
-                value=region.upper(),
+                value=config.DEFAULT_REGION.upper(),
                 inline=False
             )
             
