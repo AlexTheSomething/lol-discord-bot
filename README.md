@@ -4,23 +4,19 @@ A Discord bot that integrates with the Riot Games API to provide League of Legen
 
 ## ✨ Features
 
-### ✅ Fully Working:
+### ✅ Features:
 - **Summoner Information** - View player level, region, and profile icon
+- **Ranked Stats** - View ranked data, LP, and winrate
 - **Match History** - Show recent matches with KDA and results
 - **Champion Mastery** - View top champions by mastery points
 - **Free Rotation** - Check current free champion rotation
+- **Live Game Detection** - See if a player is currently in game
 - **Player Tracking** - Track players in dedicated Discord threads (stalking board)
 - **Real-Time Monitoring** - Automatically detects new matches every 2 minutes
 - **Duo Detection** - Tracks who players team up with repeatedly
 - **Comparison** - Compare two summoners side by side
 - **Champion Builds** - Get links to popular build resources
 - **Random Champion** - Get a random champion suggestion
-
-### ⚠️ Temporarily Disabled:
-- **Ranked Stats** - Disabled due to Riot API not returning summoner ID
-- **Live Game Detection** - Disabled due to Riot API not returning summoner ID
-
-> See [API_LIMITATIONS.md](API_LIMITATIONS.md) for detailed information about disabled features.
 
 ## 📋 Prerequisites
 
@@ -125,11 +121,11 @@ Logged in as: YourBotName (ID: 123456789)
 | Command | Description | Usage |
 |---------|-------------|-------|
 | `/summoner` | Display summoner information | `/summoner game_name:PlayerName tag_line:TAG` |
+| `/rank` | Show ranked stats and winrate | `/rank game_name:PlayerName tag_line:TAG` |
 | `/recentmatches` | Display last 5 matches | `/recentmatches game_name:PlayerName tag_line:TAG` |
 | `/championmastery` | Show top 5 champions | `/championmastery game_name:PlayerName tag_line:TAG` |
 | `/rotation` | Current free champion rotation | `/rotation` |
-| ~~`/rank`~~ | ~~Show ranked stats~~ | *Temporarily disabled* |
-| ~~`/livegame`~~ | ~~Show current match~~ | *Temporarily disabled* |
+| `/livegame` | Show current match if in game | `/livegame game_name:PlayerName tag_line:TAG` |
 
 ### Stalking Commands (Thread-Based)
 
@@ -258,33 +254,6 @@ discord-riot-bot/
    - Manage Threads
 2. Use `/stalk set` to set a valid forum or text channel
 3. Check that the channel still exists (wasn't deleted)
-
-### Why are /rank and /livegame disabled?
-
-The Riot API is currently not returning the `id` field when requesting summoner data. This field is required for:
-- `/rank` - Cannot fetch ranked data (needs summoner ID)
-- `/livegame` - Cannot check spectator data (needs summoner ID)
-
-**Expected API Response:**
-```json
-{
-  "id": "encrypted_summoner_id",  // ← Missing!
-  "puuid": "...",
-  "profileIconId": 6022,
-  "summonerLevel": 105
-}
-```
-
-**Actual API Response:**
-```json
-{
-  "puuid": "...",
-  "profileIconId": 6022,
-  "summonerLevel": 105
-}
-```
-
-This appears to be either a temporary Riot API bug or a limitation of Development API keys. The bot is designed to gracefully handle this - affected features are disabled but can be easily re-enabled once the API is fixed.
 
 ### "Invalid API key" error
 

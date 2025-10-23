@@ -30,11 +30,11 @@ async def setup(bot: commands.Bot):
             name="📊 Data Display Commands",
             value=(
                 "`/summoner` - Display summoner information\n"
+                "`/rank` - Show ranked stats and winrate\n"
                 "`/recentmatches` - Display last 5 matches\n"
                 "`/championmastery` - Show top 5 champions\n"
                 "`/rotation` - Current free champion rotation\n"
-                "~~`/rank`~~ - Temporarily disabled\n"
-                "~~`/livegame`~~ - Temporarily disabled"
+                "`/livegame` - Show current match if in game"
             ),
             inline=False
         )
