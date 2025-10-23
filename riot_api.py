@@ -103,20 +103,9 @@ async def get_summoner_rank(puuid: str, region: str = config.DEFAULT_REGION) -> 
     if not platform_url:
         raise RiotAPIError(f"Invalid region: {region}")
     
-    # First get summoner ID from puuid
-    summoner_url = f"{platform_url}/lol/summoner/v4/summoners/by-puuid/{puuid}"
+    # Use the new PUUID-based endpoint (no need for summoner ID!)
+    url = f"{platform_url}/lol/league/v4/entries/by-puuid/{puuid}"
     headers = {"X-Riot-Token": config.RIOT_API_KEY}
-    summoner_data = await _make_request(summoner_url, headers)
-    
-    # Check if we have the summoner ID (Riot API sometimes doesn't return it)
-    if not summoner_data or 'id' not in summoner_data:
-        # Riot API is not returning summoner ID - this is a known issue
-        # Return empty ranked data instead of erroring
-        print(f"WARNING: Riot API did not return summoner ID. Cannot fetch ranked data.")
-        return []
-    
-    # Get ranked data using summoner ID
-    url = f"{platform_url}/lol/league/v4/entries/by-summoner/{summoner_data['id']}"
     return await _make_request(url, headers)
 
 
@@ -240,23 +229,14 @@ async def get_active_game(puuid: str, region: str = config.DEFAULT_REGION) -> Op
     if not platform_url:
         raise RiotAPIError(f"Invalid region: {region}")
     
-    # First get summoner ID from puuid
-    summoner_url = f"{platform_url}/lol/summoner/v4/summoners/by-puuid/{puuid}"
+    # Use the new PUUID-based spectator v5 endpoint
+    url = f"{platform_url}/lol/spectator/v5/active-games/by-summoner/{puuid}"
     headers = {"X-Riot-Token": config.RIOT_API_KEY}
-    summoner_data = await _make_request(summoner_url, headers)
-    
-    # Check if we have summoner ID (Riot API sometimes doesn't return it)
-    if not summoner_data or 'id' not in summoner_data:
-        print(f"WARNING: Cannot check live game - Riot API did not return summoner ID")
-        return None  # Can't check without summoner ID
-    
-    # Then get active game
-    url = f"{platform_url}/lol/spectator/v5/active-games/by-summoner/{summoner_data['id']}"
     
     try:
         return await _make_request(url, headers)
     except RiotAPIError as e:
-        if "not found" in str(e).lower():
+        if "not found" in str(e).lower() or "404" in str(e):
             return None  # Player is not in an active game
         raise
 

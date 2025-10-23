@@ -160,12 +160,11 @@ async def setup(bot: commands.Bot):
                     return
             
             # Fetch rank data for the initial post
-            # NOTE: Rank disabled due to Riot API not returning summoner ID
-            # rank_data = await riot_api.get_summoner_rank(puuid, region)
+            rank_data = await riot_api.get_summoner_rank(puuid, config.DEFAULT_REGION)
             
             # Create embeds for initial post
             summoner_embed = create_summoner_embed(summoner_data)
-            # rank_embed = create_rank_embed(summoner_data, rank_data)
+            rank_embed = create_rank_embed(summoner_data, rank_data)
             
             initial_content = (
                 f"**Now stalking {full_name}**\n"
@@ -179,7 +178,7 @@ async def setup(bot: commands.Bot):
                 thread_with_message = await channel.create_thread(
                     name=f"👁️ {full_name}",
                     content=initial_content,
-                    embeds=[summoner_embed],  # rank_embed removed due to API limitations
+                    embeds=[summoner_embed, rank_embed],
                     reason=f"Stalking player {full_name}"
                 )
                 # For forum posts, we get a ThreadWithMessage object
@@ -196,7 +195,7 @@ async def setup(bot: commands.Bot):
                 # Send initial message in the thread
                 info_message = await thread.send(
                     content=initial_content,
-                    embeds=[summoner_embed]  # rank_embed removed due to API limitations
+                    embeds=[summoner_embed, rank_embed]
                 )
                 
                 # Pin the info message (only for text channel threads)
@@ -401,8 +400,7 @@ async def check_player_activity(bot: commands.Bot, player: dict, data: dict):
         player["duo_partners"] = {}  # {puuid: {name, count}}
     
     # Check if player is in a live game
-    # NOTE: Disabled due to Riot API not returning summoner ID
-    # await check_live_game(thread, player, puuid, region, full_name)
+    await check_live_game(thread, player, puuid, region, full_name)
     
     # Check for new matches
     await check_new_matches(thread, player, puuid, region, full_name)
