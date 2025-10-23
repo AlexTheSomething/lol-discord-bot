@@ -258,7 +258,8 @@ discord-riot-bot/
 ### "Invalid API key" error
 
 - Make sure you've correctly copied your Riot API key to the `.env` file
-- Development API keys expire after 24 hours - generate a new one
+- **Development API keys expire after 24 hours** - You'll need to regenerate daily
+- **Personal/Production API keys don't expire** - Recommended for 24/7 hosting
 - Ensure there are no extra spaces in your `.env` file
 
 ### "Rate limit exceeded" error
