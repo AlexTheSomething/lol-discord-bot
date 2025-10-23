@@ -2,8 +2,6 @@
 
 A Discord bot that integrates with the Riot Games API to provide League of Legends player statistics and real-time match monitoring through Discord threads!
 
-> ⚠️ **Note:** Some features are temporarily disabled due to Riot API limitations. See [API_LIMITATIONS.md](API_LIMITATIONS.md) for details.
-
 ## ✨ Features
 
 ### ✅ Fully Working:
@@ -263,7 +261,30 @@ discord-riot-bot/
 
 ### Why are /rank and /livegame disabled?
 
-The Riot API is currently not returning the `id` field needed for these features. This appears to be an API issue. See [API_LIMITATIONS.md](API_LIMITATIONS.md) for details and potential solutions.
+The Riot API is currently not returning the `id` field when requesting summoner data. This field is required for:
+- `/rank` - Cannot fetch ranked data (needs summoner ID)
+- `/livegame` - Cannot check spectator data (needs summoner ID)
+
+**Expected API Response:**
+```json
+{
+  "id": "encrypted_summoner_id",  // ← Missing!
+  "puuid": "...",
+  "profileIconId": 6022,
+  "summonerLevel": 105
+}
+```
+
+**Actual API Response:**
+```json
+{
+  "puuid": "...",
+  "profileIconId": 6022,
+  "summonerLevel": 105
+}
+```
+
+This appears to be either a temporary Riot API bug or a limitation of Development API keys. The bot is designed to gracefully handle this - affected features are disabled but can be easily re-enabled once the API is fixed.
 
 ### "Invalid API key" error
 
