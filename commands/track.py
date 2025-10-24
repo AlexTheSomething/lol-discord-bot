@@ -426,7 +426,9 @@ async def check_live_game(thread, player: dict, puuid: str, region: str, full_na
                     player_champ = riot_api.get_champion_name_by_id(champ_id, champion_data)
                     break
             
-            game_mode = active_game.get("gameMode", "Unknown")
+            # Get game mode using queue ID (same as match results for consistency)
+            queue_id = active_game.get("gameQueueConfigId", 0)
+            game_mode = get_game_mode_name(queue_id)
             
             # Post to thread
             embed = discord.Embed(
@@ -439,7 +441,7 @@ async def check_live_game(thread, player: dict, puuid: str, region: str, full_na
             embed.add_field(name="Game Mode", value=game_mode, inline=True)
             
             await thread.send(embed=embed)
-            print(f"[Monitor] {full_name} started a game as {player_champ}")
+            print(f"[Monitor] {full_name} started a game as {player_champ} ({game_mode})")
         
         elif not active_game and player["is_in_game"]:
             # Player finished their game
