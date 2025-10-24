@@ -498,6 +498,9 @@ async def check_new_matches(thread, player: dict, puuid: str, region: str, full_
         # Check for duo partners
         duo_info = await detect_duo_partners(match_details, player, puuid, champion_data)
         
+        # Fetch current rank data for LP tracking
+        rank_change_info = await check_rank_change(player, puuid, region)
+        
         # Create result embed
         color = 0x00FF00 if win else 0xFF0000
         result_text = "✅ Victory" if win else "❌ Defeat"
@@ -512,10 +515,20 @@ async def check_new_matches(thread, player: dict, puuid: str, region: str, full_
         embed.add_field(name="KDA", value=f"{kda} ({kda_ratio})", inline=True)
         embed.add_field(name="Duration", value=f"{duration_minutes}min", inline=True)
         
+        # Add rank change if available
+        if rank_change_info:
+            embed.add_field(name="📊 Rank Change", value=rank_change_info, inline=False)
+        
         if duo_info:
             embed.add_field(name="🤝 Duo Partners", value=duo_info, inline=False)
         
         await thread.send(embed=embed)
+        
+        # Check for promotion/demotion
+        promo_message = await check_promotion_demotion(player, thread, full_name)
+        if promo_message:
+            await thread.send(promo_message)
+        
         print(f"[Monitor] {full_name} finished match: {result_text} as {champion_name}")
     
     except Exception as e:
@@ -574,4 +587,119 @@ async def detect_duo_partners(match_details: dict, player: dict, player_puuid: s
     
     except Exception as e:
         print(f"[Monitor] Error detecting duo partners: {e}")
+        return None
+
+
+async def check_rank_change(player: dict, puuid: str, region: str) -> str:
+    """
+    Check for LP/rank changes and return a formatted string.
+    Returns None if no ranked data or no change to display.
+    """
+    try:
+        # Fetch current rank data
+        rank_data = await riot_api.get_summoner_rank(puuid, region)
+        
+        # Find Solo/Duo queue
+        current_solo = None
+        for queue in rank_data:
+            if queue.get("queueType") == "RANKED_SOLO_5x5":
+                current_solo = queue
+                break
+        
+        if not current_solo:
+            return None  # Not ranked
+        
+        # Extract current rank info
+        current_tier = current_solo.get("tier", "")
+        current_rank = current_solo.get("rank", "")
+        current_lp = current_solo.get("leaguePoints", 0)
+        
+        # Initialize previous rank if not exists
+        if "last_rank" not in player:
+            player["last_rank"] = {
+                "tier": current_tier,
+                "rank": current_rank,
+                "lp": current_lp
+            }
+            return None  # First time tracking, no change to show
+        
+        # Get previous rank
+        prev_tier = player["last_rank"].get("tier", "")
+        prev_rank = player["last_rank"].get("rank", "")
+        prev_lp = player["last_rank"].get("lp", 0)
+        
+        # Calculate LP change
+        lp_change = current_lp - prev_lp
+        
+        # Update stored rank
+        player["last_rank"] = {
+            "tier": current_tier,
+            "rank": current_rank,
+            "lp": current_lp
+        }
+        
+        # Format rank display
+        rank_display = f"{current_tier.capitalize()} {current_rank} {current_lp} LP"
+        
+        # If LP changed, show the change
+        if lp_change != 0:
+            change_emoji = "📈" if lp_change > 0 else "📉"
+            sign = "+" if lp_change > 0 else ""
+            return f"{rank_display} ({sign}{lp_change} LP) {change_emoji}"
+        
+        # No change
+        return f"{rank_display}"
+    
+    except Exception as e:
+        print(f"[Monitor] Error checking rank change: {e}")
+        return None
+
+
+async def check_promotion_demotion(player: dict, thread, full_name: str) -> str:
+    """
+    Check if player was promoted or demoted and return a special message.
+    Returns None if no promotion/demotion occurred.
+    """
+    try:
+        if "last_rank" not in player or "prev_last_rank" not in player:
+            # Store current as previous for next check
+            if "last_rank" in player:
+                player["prev_last_rank"] = player["last_rank"].copy()
+            return None
+        
+        current = player["last_rank"]
+        previous = player.get("prev_last_rank", {})
+        
+        current_tier = current.get("tier", "")
+        current_rank = current.get("rank", "")
+        prev_tier = previous.get("tier", "")
+        prev_rank = previous.get("rank", "")
+        
+        # Update prev_last_rank for next check
+        player["prev_last_rank"] = current.copy()
+        
+        # Check for promotion/demotion
+        tier_order = {"IRON": 1, "BRONZE": 2, "SILVER": 3, "GOLD": 4, "PLATINUM": 5, 
+                      "EMERALD": 6, "DIAMOND": 7, "MASTER": 8, "GRANDMASTER": 9, "CHALLENGER": 10}
+        rank_order = {"IV": 1, "III": 2, "II": 3, "I": 4}
+        
+        current_tier_val = tier_order.get(current_tier, 0)
+        prev_tier_val = tier_order.get(prev_tier, 0)
+        current_rank_val = rank_order.get(current_rank, 0)
+        prev_rank_val = rank_order.get(prev_rank, 0)
+        
+        # Promotion
+        if (current_tier_val > prev_tier_val) or \
+           (current_tier_val == prev_tier_val and current_rank_val > prev_rank_val):
+            return f"🎉 **PROMOTION!** {full_name} has been promoted to **{current_tier.capitalize()} {current_rank}**! 🎉"
+        
+        # Demotion
+        elif (current_tier_val < prev_tier_val) or \
+             (current_tier_val == prev_tier_val and current_rank_val < prev_rank_val):
+            return f"😢 {full_name} was demoted to **{current_tier.capitalize()} {current_rank}**"
+        
+        return None
+    
+    except Exception as e:
+        print(f"[Monitor] Error checking promotion/demotion: {e}")
         return None

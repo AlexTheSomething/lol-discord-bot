@@ -280,3 +280,26 @@ def get_champion_name_by_id(champion_id: int, champion_data: Dict[str, Any]) -> 
             return champ_info.get("name", "Unknown Champion")
     return "Unknown Champion"
 
+
+async def get_clash_tournaments(region: str = config.DEFAULT_REGION) -> List[Dict[str, Any]]:
+    """
+    Fetch upcoming Clash tournament data.
+    
+    Args:
+        region: Region code (e.g., 'na1', 'euw1')
+        
+    Returns:
+        List of clash tournaments
+        
+    Raises:
+        RiotAPIError: If the request fails
+    """
+    platform_url = config.RIOT_REGIONS.get(region.lower())
+    if not platform_url:
+        raise RiotAPIError(f"Invalid region: {region}")
+    
+    url = f"{platform_url}/lol/clash/v1/tournaments"
+    headers = {"X-Riot-Token": config.RIOT_API_KEY}
+    
+    return await _make_request(url, headers) or []
+

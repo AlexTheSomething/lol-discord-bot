@@ -58,6 +58,7 @@ async def setup(bot: commands.Bot):
             value=(
                 "`/randomchampion` - Get random champion suggestion\n"
                 "`/build` - Get build resources for a champion\n"
+                "`/clash` - Show upcoming Clash tournaments\n"
                 "`/ping` - Check bot latency\n"
                 "`/help` - Show this help message\n"
                 "`/about` - Bot information"

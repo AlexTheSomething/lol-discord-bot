@@ -143,6 +143,7 @@ Logged in as: YourBotName (ID: 123456789)
 |---------|-------------|-------|
 | `/randomchampion` | Random champion suggestion | `/randomchampion [from_rotation:True/False]` |
 | `/build` | Get build resources | `/build champion_name:Ahri` |
+| `/clash` | Show upcoming Clash tournaments | `/clash` |
 | `/ping` | Check bot latency | `/ping` |
 | `/help` | Show all commands | `/help` |
 | `/about` | Bot information | `/about` |
@@ -198,9 +199,11 @@ The bot features a unique **automated thread-based tracking system**:
    ```
 
 ### Automatic Monitoring:
-Once tracked, the bot automatically:
-- ✅ Detects when they finish matches
+Once tracked, the bot automatically (every 2 minutes):
+- ✅ Detects when they start/finish matches
 - ✅ Posts match results with KDA to their thread
+- ✅ **Tracks LP gains/losses** (e.g., "Silver IV 45 LP → 62 LP (+17) 📈")
+- ✅ **Alerts on promotions/demotions** (e.g., "🎉 PROMOTION! Silver III!")
 - ✅ Tracks who they play with (duo detection)
 - ✅ Shows recurring teammates (3+ games together)
 
