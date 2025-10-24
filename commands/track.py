@@ -495,11 +495,20 @@ async def check_new_matches(thread, player: dict, puuid: str, region: str, full_
         duration_seconds = match_details["info"]["gameDuration"]
         duration_minutes = duration_seconds // 60
         
+        # Get game mode
+        queue_id = match_details["info"].get("queueId", 0)
+        game_mode = get_game_mode_name(queue_id)
+        
+        # Check if this is a ranked solo/duo game
+        is_ranked_solo = (queue_id == 420)
+        
         # Check for duo partners
         duo_info = await detect_duo_partners(match_details, player, puuid, champion_data)
         
-        # Fetch current rank data for LP tracking
-        rank_change_info = await check_rank_change(player, puuid, region)
+        # Fetch current rank data for LP tracking (ONLY for ranked solo/duo)
+        rank_change_info = None
+        if is_ranked_solo:
+            rank_change_info = await check_rank_change(player, puuid, region)
         
         # Create result embed
         color = 0x00FF00 if win else 0xFF0000
@@ -513,9 +522,10 @@ async def check_new_matches(thread, player: dict, puuid: str, region: str, full_
         )
         embed.add_field(name="Champion", value=champion_name, inline=True)
         embed.add_field(name="KDA", value=f"{kda} ({kda_ratio})", inline=True)
+        embed.add_field(name="Game Mode", value=game_mode, inline=True)
         embed.add_field(name="Duration", value=f"{duration_minutes}min", inline=True)
         
-        # Add rank change if available
+        # Add rank change if available (only for ranked games)
         if rank_change_info:
             embed.add_field(name="📊 Rank Change", value=rank_change_info, inline=False)
         
@@ -524,12 +534,13 @@ async def check_new_matches(thread, player: dict, puuid: str, region: str, full_
         
         await thread.send(embed=embed)
         
-        # Check for promotion/demotion
-        promo_message = await check_promotion_demotion(player, thread, full_name)
-        if promo_message:
-            await thread.send(promo_message)
+        # Check for promotion/demotion (only for ranked games)
+        if is_ranked_solo:
+            promo_message = await check_promotion_demotion(player, thread, full_name)
+            if promo_message:
+                await thread.send(promo_message)
         
-        print(f"[Monitor] {full_name} finished match: {result_text} as {champion_name}")
+        print(f"[Monitor] {full_name} finished match: {result_text} as {champion_name} ({game_mode})")
     
     except Exception as e:
         print(f"[Monitor] Error checking matches for {full_name}: {e}")
@@ -703,3 +714,36 @@ async def check_promotion_demotion(player: dict, thread, full_name: str) -> str:
     except Exception as e:
         print(f"[Monitor] Error checking promotion/demotion: {e}")
         return None
+
+
+def get_game_mode_name(queue_id: int) -> str:
+    """
+    Convert queue ID to readable game mode name.
+    
+    Args:
+        queue_id: Riot API queue ID
+        
+    Returns:
+        Human-readable game mode name
+    """
+    queue_names = {
+        0: "Custom Game",
+        400: "Normal Draft",
+        420: "Ranked Solo/Duo",
+        430: "Normal Blind",
+        440: "Ranked Flex",
+        450: "ARAM",
+        700: "Clash",
+        830: "Co-op vs AI (Intro)",
+        840: "Co-op vs AI (Beginner)",
+        850: "Co-op vs AI (Intermediate)",
+        900: "URF",
+        1020: "One For All",
+        1300: "Nexus Blitz",
+        1400: "Ultimate Spellbook",
+        1700: "Arena",
+        1900: "Pick URF",
+        2000: "Tutorial"
+    }
+    
+    return queue_names.get(queue_id, f"Unknown Mode ({queue_id})")
