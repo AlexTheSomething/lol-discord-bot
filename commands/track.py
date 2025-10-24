@@ -19,11 +19,16 @@ DATA_FILE = "data/tracked_users.json"
 
 
 def load_tracking_data():
-    """Load tracking configuration from JSON file."""
+    """Load tracking configuration from JSON file (all guilds)."""
     if os.path.exists(DATA_FILE):
         with open(DATA_FILE, "r") as f:
-            return json.load(f)
-    return {"tracking_channel_id": None, "tracked_players": []}
+            data = json.load(f)
+            # Migrate old format to new format if needed
+            if "guilds" not in data:
+                # Old format detected, migrate it
+                return {"guilds": {}}
+            return data
+    return {"guilds": {}}
 
 
 def save_tracking_data(data):
@@ -31,6 +36,28 @@ def save_tracking_data(data):
     os.makedirs(os.path.dirname(DATA_FILE), exist_ok=True)
     with open(DATA_FILE, "w") as f:
         json.dump(data, f, indent=2)
+
+
+def get_guild_data(guild_id: int):
+    """Get tracking data for a specific guild."""
+    data = load_tracking_data()
+    guild_id_str = str(guild_id)
+    
+    if guild_id_str not in data["guilds"]:
+        data["guilds"][guild_id_str] = {
+            "tracking_channel_id": None,
+            "tracked_players": []
+        }
+        save_tracking_data(data)
+    
+    return data["guilds"][guild_id_str]
+
+
+def save_guild_data(guild_id: int, guild_data: dict):
+    """Save tracking data for a specific guild."""
+    data = load_tracking_data()
+    data["guilds"][str(guild_id)] = guild_data
+    save_tracking_data(data)
 
 
 async def setup(bot: commands.Bot):
@@ -83,10 +110,10 @@ async def setup(bot: commands.Bot):
                     await interaction.followup.send(embed=embed)
                     return
             
-            # Save the stalking channel
-            data = load_tracking_data()
-            data["tracking_channel_id"] = channel.id
-            save_tracking_data(data)
+            # Save the stalking channel for this guild
+            guild_data = get_guild_data(interaction.guild.id)
+            guild_data["tracking_channel_id"] = channel.id
+            save_guild_data(interaction.guild.id, guild_data)
             
             channel_type = "forum" if isinstance(channel, discord.ForumChannel) else "text channel"
             
@@ -117,10 +144,10 @@ async def setup(bot: commands.Bot):
             return
         
         try:
-            data = load_tracking_data()
+            guild_data = get_guild_data(interaction.guild.id)
             
             # Check if a channel is even set
-            if not data.get("tracking_channel_id"):
+            if not guild_data.get("tracking_channel_id"):
                 embed = create_error_embed(
                     "No stalking channel is currently set.\n\n"
                     "Use `/stalk set` to set one first."
@@ -129,7 +156,7 @@ async def setup(bot: commands.Bot):
                 return
             
             # Check if there are tracked players
-            tracked_count = len(data.get("tracked_players", []))
+            tracked_count = len(guild_data.get("tracked_players", []))
             
             if tracked_count > 0:
                 embed = create_error_embed(
@@ -142,13 +169,13 @@ async def setup(bot: commands.Bot):
                 return
             
             # Get channel mention before removing
-            channel_id = data["tracking_channel_id"]
+            channel_id = guild_data["tracking_channel_id"]
             channel = interaction.guild.get_channel(channel_id)
             channel_mention = channel.mention if channel else f"Channel ID: {channel_id}"
             
             # Remove the stalking channel
-            data["tracking_channel_id"] = None
-            save_tracking_data(data)
+            guild_data["tracking_channel_id"] = None
+            save_guild_data(interaction.guild.id, guild_data)
             
             embed = create_basic_embed(
                 title="✅ Stalking Channel Removed",
@@ -184,9 +211,9 @@ async def setup(bot: commands.Bot):
         
         try:
             # Check if tracking channel is set
-            data = load_tracking_data()
+            guild_data = get_guild_data(interaction.guild.id)
             
-            if not data.get("tracking_channel_id"):
+            if not guild_data.get("tracking_channel_id"):
                 embed = create_error_embed(
                     "No stalking channel set!\n\n"
                     "Use `/stalk set` to set a channel first."
@@ -195,7 +222,7 @@ async def setup(bot: commands.Bot):
                 return
             
             # Get the tracking channel
-            channel = interaction.guild.get_channel(data["tracking_channel_id"])
+            channel = interaction.guild.get_channel(guild_data["tracking_channel_id"])
             
             if not channel:
                 embed = create_error_embed(
@@ -214,7 +241,7 @@ async def setup(bot: commands.Bot):
             full_name = f"{verified_name}#{verified_tag}"
             
             # Check if player is already tracked
-            for player in data.get("tracked_players", []):
+            for player in guild_data.get("tracked_players", []):
                 if player["puuid"] == puuid:
                     embed = create_error_embed(
                         f"**{full_name}** is already being stalked!\n\n"
@@ -266,20 +293,21 @@ async def setup(bot: commands.Bot):
                 await info_message.pin()
             
             # Add to tracked players
-            if "tracked_players" not in data:
-                data["tracked_players"] = []
+            if "tracked_players" not in guild_data:
+                guild_data["tracked_players"] = []
             
-            data["tracked_players"].append({
+            guild_data["tracked_players"].append({
                 "puuid": puuid,
                 "game_name": verified_name,
                 "tag_line": verified_tag,
                 "region": config.DEFAULT_REGION.lower(),
                 "thread_id": thread.id,
                 "tracked_at": datetime.now().isoformat(),
-                "tracked_by": interaction.user.id
+                "tracked_by": interaction.user.id,
+                "guild_id": interaction.guild.id
             })
             
-            save_tracking_data(data)
+            save_guild_data(interaction.guild.id, guild_data)
             
             # Send confirmation
             embed = create_basic_embed(
@@ -310,9 +338,9 @@ async def setup(bot: commands.Bot):
         await interaction.response.defer()
         
         try:
-            data = load_tracking_data()
+            guild_data = get_guild_data(interaction.guild.id)
             
-            if not data.get("tracked_players"):
+            if not guild_data.get("tracked_players"):
                 embed = create_basic_embed(
                     title="📋 Stalked Players",
                     description="No players are currently being stalked.\n\nUse `/stalk add` to start stalking!"
@@ -320,16 +348,16 @@ async def setup(bot: commands.Bot):
                 await interaction.followup.send(embed=embed)
                 return
             
-            tracking_channel_id = data.get("tracking_channel_id")
+            tracking_channel_id = guild_data.get("tracking_channel_id")
             channel_mention = f"<#{tracking_channel_id}>" if tracking_channel_id else "None set"
             
             embed = create_basic_embed(
                 title="📋 Stalked Players",
                 description=f"**Stalking Channel:** {channel_mention}\n\n"
-                           f"**{len(data['tracked_players'])} player(s) stalked:**"
+                           f"**{len(guild_data['tracked_players'])} player(s) stalked:**"
             )
             
-            for i, player in enumerate(data["tracked_players"], 1):
+            for i, player in enumerate(guild_data["tracked_players"], 1):
                 full_name = f"{player['game_name']}#{player['tag_line']}"
                 region = player['region'].upper()
                 thread_id = player['thread_id']
@@ -368,11 +396,11 @@ async def setup(bot: commands.Bot):
         await interaction.response.defer()
         
         try:
-            data = load_tracking_data()
+            guild_data = get_guild_data(interaction.guild.id)
             
             # Find the player
             player_to_remove = None
-            for player in data.get("tracked_players", []):
+            for player in guild_data.get("tracked_players", []):
                 if (player["game_name"].lower() == game_name.lower() and 
                     player["tag_line"].lower() == tag_line.lower()):
                     player_to_remove = player
@@ -394,8 +422,8 @@ async def setup(bot: commands.Bot):
                 pass  # Thread might already be deleted
             
             # Remove from tracked list
-            data["tracked_players"].remove(player_to_remove)
-            save_tracking_data(data)
+            guild_data["tracked_players"].remove(player_to_remove)
+            save_guild_data(interaction.guild.id, guild_data)
             
             full_name = f"{player_to_remove['game_name']}#{player_to_remove['tag_line']}"
             
@@ -418,39 +446,62 @@ async def setup(bot: commands.Bot):
 
 async def monitor_players(bot: commands.Bot):
     """
-    Background monitoring function that checks stalked players.
+    Background monitoring function that checks stalked players across all guilds.
     Detects: Live games, new matches, duo partners.
     """
-    data = load_tracking_data()
+    all_data = load_tracking_data()
     
-    if not data.get("tracking_channel_id") or not data.get("tracked_players"):
-        return  # Nothing to monitor
+    if "guilds" not in all_data or not all_data["guilds"]:
+        return  # No guilds configured
     
-    print(f"[Monitor] Checking {len(data['tracked_players'])} stalked players...")
+    total_players = 0
     
-    for player in data["tracked_players"]:
-        try:
-            await check_player_activity(bot, player, data)
-        except Exception as e:
-            print(f"[Monitor] Error checking {player['game_name']}#{player['tag_line']}: {e}")
+    # Monitor each guild separately
+    for guild_id_str, guild_data in all_data["guilds"].items():
+        if not guild_data.get("tracking_channel_id") or not guild_data.get("tracked_players"):
+            continue  # Skip guilds with no setup or no players
+        
+        guild_id = int(guild_id_str)
+        guild = bot.get_guild(guild_id)
+        
+        if not guild:
+            print(f"[Monitor] Warning: Guild {guild_id} not found")
+            continue
+        
+        total_players += len(guild_data["tracked_players"])
+        
+        for player in guild_data["tracked_players"]:
+            try:
+                await check_player_activity(bot, player, guild_data, guild_id)
+            except Exception as e:
+                print(f"[Monitor] Error checking {player['game_name']}#{player['tag_line']} in guild {guild.name}: {e}")
+        
+        # Save updates for this guild
+        save_guild_data(guild_id, guild_data)
     
-    # Save any updates
-    save_tracking_data(data)
+    if total_players > 0:
+        print(f"[Monitor] Checked {total_players} stalked player(s) across {len(all_data['guilds'])} guild(s)")
 
 
-async def check_player_activity(bot: commands.Bot, player: dict, data: dict):
+async def check_player_activity(bot: commands.Bot, player: dict, guild_data: dict, guild_id: int):
     """Check a single player for activity and post updates."""
     puuid = player["puuid"]
     region = player["region"]
     thread_id = player["thread_id"]
     full_name = f"{player['game_name']}#{player['tag_line']}"
     
+    # Get the guild first
+    guild = bot.get_guild(guild_id)
+    if not guild:
+        print(f"[Monitor] Guild {guild_id} not found for {full_name}")
+        return
+    
     # Get the thread
-    thread = bot.get_channel(thread_id)
+    thread = guild.get_thread(thread_id)
     if not thread:
         # Try fetching the thread
         try:
-            thread = await bot.fetch_channel(thread_id)
+            thread = await guild.fetch_channel(thread_id)
         except:
             print(f"[Monitor] Thread not found for {full_name}")
             return
