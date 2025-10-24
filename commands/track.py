@@ -52,7 +52,11 @@ async def setup(bot: commands.Bot):
             interaction: Discord interaction
             channel: The channel to use for tracking
         """
-        await interaction.response.defer()
+        try:
+            await interaction.response.defer()
+        except Exception as e:
+            print(f"[Error] Failed to defer interaction in /stalk set: {e}")
+            return
         
         try:
             # Check if the bot has permissions in that channel
@@ -106,7 +110,11 @@ async def setup(bot: commands.Bot):
         Args:
             interaction: Discord interaction
         """
-        await interaction.response.defer()
+        try:
+            await interaction.response.defer()
+        except Exception as e:
+            print(f"[Error] Failed to defer interaction in /stalk unset: {e}")
+            return
         
         try:
             data = load_tracking_data()
