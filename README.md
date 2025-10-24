@@ -132,6 +132,7 @@ Logged in as: YourBotName (ID: 123456789)
 | Command | Description | Usage |
 |---------|-------------|-------|
 | `/stalk set` | Set the stalking channel | `/stalk set channel:#your-channel` |
+| `/stalk unset` | Remove stalking channel | `/stalk unset` |
 | `/stalk add` | Stalk a player (creates thread) | `/stalk add game_name:PlayerName tag_line:TAG` |
 | `/stalk list` | List all stalked players | `/stalk list` |
 | `/stalk remove` | Stop stalking a player | `/stalk remove game_name:PlayerName tag_line:TAG` |

@@ -98,6 +98,62 @@ async def setup(bot: commands.Bot):
             embed = create_error_embed(f"An error occurred: {str(e)}")
             await interaction.followup.send(embed=embed)
     
+    @track_group.command(name="unset", description="Remove the stalking channel configuration")
+    async def track_unset(interaction: discord.Interaction):
+        """
+        Unset/remove the stalking channel.
+        
+        Args:
+            interaction: Discord interaction
+        """
+        await interaction.response.defer()
+        
+        try:
+            data = load_tracking_data()
+            
+            # Check if a channel is even set
+            if not data.get("tracking_channel_id"):
+                embed = create_error_embed(
+                    "No stalking channel is currently set.\n\n"
+                    "Use `/stalk set` to set one first."
+                )
+                await interaction.followup.send(embed=embed)
+                return
+            
+            # Check if there are tracked players
+            tracked_count = len(data.get("tracked_players", []))
+            
+            if tracked_count > 0:
+                embed = create_error_embed(
+                    f"⚠️ Cannot unset stalking channel!\n\n"
+                    f"You have **{tracked_count} player(s)** currently being stalked.\n\n"
+                    f"Please remove all tracked players first using `/stalk remove`.\n"
+                    f"Use `/stalk list` to see all tracked players."
+                )
+                await interaction.followup.send(embed=embed)
+                return
+            
+            # Get channel mention before removing
+            channel_id = data["tracking_channel_id"]
+            channel = interaction.guild.get_channel(channel_id)
+            channel_mention = channel.mention if channel else f"Channel ID: {channel_id}"
+            
+            # Remove the stalking channel
+            data["tracking_channel_id"] = None
+            save_tracking_data(data)
+            
+            embed = create_basic_embed(
+                title="✅ Stalking Channel Removed",
+                description=f"The stalking channel ({channel_mention}) has been unset.\n\n"
+                           f"Use `/stalk set` to set a new channel when needed."
+            )
+            
+            await interaction.followup.send(embed=embed)
+        
+        except Exception as e:
+            embed = create_error_embed(f"An error occurred: {str(e)}")
+            await interaction.followup.send(embed=embed)
+    
     @track_group.command(name="add", description="Add a player to track (creates a thread)")
     @app_commands.describe(
         game_name="Player's game name (without tag)",

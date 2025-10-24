@@ -44,6 +44,7 @@ async def setup(bot: commands.Bot):
             name="👁️ Player Stalking (Thread-Based)",
             value=(
                 "`/stalk set` - Set stalking channel\n"
+                "`/stalk unset` - Remove stalking channel\n"
                 "`/stalk add` - Stalk a player (creates thread)\n"
                 "`/stalk list` - List all stalked players\n"
                 "`/stalk remove` - Stop stalking a player\n"
